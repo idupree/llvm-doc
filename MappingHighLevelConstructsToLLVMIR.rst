@@ -430,6 +430,11 @@ numerals starting from zero:
    %Foo = type { i32 }
 
 
+Nested Structures
+-----------------
+**TODO:** Show an example of a moderately complex nested structure.
+
+
 Mapping Advanced Constructs to LLVM IR
 ======================================
 In this chapter, we'll look at various non-OOP constructs that are highly
