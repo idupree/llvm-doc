@@ -542,6 +542,9 @@ I resort to pseudo-C++ because C++ does not directly support generators:
 
 This becomes something like this:
 
+**TODO:** The sample below is broken and only works with a single ``yield``
+statement.  It **must** work with any number of ``yield`` statements.
+
 .. code-block:: llvm
 
    %foo_context = type {
@@ -1277,6 +1280,23 @@ is done precisely the same way that you convert a virtual member function to
 LLVM IR.
 
 
+Boxing
+------
+Boxing is the process of converting a non-object primitive value into an
+object.  It is as easy as it sounds.  You basically create a wrapper class
+which you instantiate and initialize with the non-object value:
+
+**TODO:** Document how to box a value (create instance, initialize instance).
+
+
+Unboxing
+--------
+Unboxing is the reverse of boxing: You downgrade a full object to a mere
+scalar value by retrieving the boxed value from the box object.
+
+**TODO:** Document how to unbox an object.
+
+
 Class Equivalence Test
 ----------------------
 There are basically two ways of doing this:
@@ -1341,6 +1361,8 @@ The naive implementation works as follows:
 
       %2 = getelementptr %object %
       ; ascend up the chain of parents
+
+**TODO:** Finish up Class Inheritance Test example.
 
 
 The ``new`` Operator
