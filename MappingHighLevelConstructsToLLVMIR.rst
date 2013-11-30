@@ -462,33 +462,10 @@ functions:
       return function(10);
    }
 
-Here the "problem" is that the lambda function references a local variable,
-namely ``a``, even though it is a function of its own.  The easiest and
-most generic way of implementing lambda functions is to pass in a special
-pointer, say ``parent``, that points to the frame of the caller of the
-lambda function.  Another implementation is to parameterize the local
-variables that the lambda function uses and pass those into it.
-
-The first solution looks something like this:
-
-.. code-block:: llvm
-
-   define i32 @lambda(i8* %parent, i32 %x) nounwind {
-      %1 = bitcast i8* %parent to i32*
-      %2 = load i32* %1       ; %2 = a
-      %3 = add i32 %x, %2
-      ret i32 %3
-   }
-
-   declare i8* @llvm.frameaddress(i32 %level)
-
-   define i32 @foo(i32 %a) nounwind {
-      %1 = call i8* @llvm.frameaddress(i32 0)
-      %2 = call i32 @lambda(i8* %1, i32 10)
-      ret i32 %2
-   }
-
-The other solution is straightforward and looks like this:
+Here the "problem" is that the lambda function references a local variable of
+the caller, namely ``a``, even though the lambda function is a function of its
+own.  This can be solved easily by passing the local variables in as implicit
+arguments to the lambda function:
 
 .. code-block:: llvm
 
@@ -502,9 +479,63 @@ The other solution is straightforward and looks like this:
       ret i32 %1
    }
 
-Given the fact that the reference manual warns about the use of the
-``@llvm.frameaddress`` intrinsic function, the second solution is to be
-preferred.
+Alternatively, if the lambda function uses more than a few variables, you can
+wrap them up in a structure which you pass in a pointer to the lambda
+function:
+
+.. code-block:: cpp
+
+   int foo(int a, int b)
+   {
+      int c = integer_parse();
+      auto function = lambda(int x) { return (a + b - c) * x; }
+      return function(10);
+   }
+
+Becomes:
+
+.. code-block:: llvm
+
+   %Lambda_Arguments = type {
+      i32,        ; 0: a (argument)
+      i32,        ; 1: b (argument)
+      i32         ; 2: c (local)
+   }
+
+   define i32 @lambda(%Lambda_Arguments* %args, i32 %x) nounwind {
+     %1 = getelementptr %Lambda_Arguments* %args, i32 0, i32 0
+     %a = load i32* %1
+     %2 = getelementptr %Lambda_Arguments* %args, i32 0, i32 1
+     %b = load i32* %2
+     %3 = getelementptr %Lambda_Arguments* %args, i32 0, i32 2
+     %c = load i32* %3
+      %4 = add i32 %a, %b
+      %5 = sub i32 %4, %c
+      %6 = mul i32 %5, %x
+      ret i32 %6
+   }
+
+   declare i32 @integer_parse()
+
+   define i32 @foo(i32 %a, i32 %b) nounwind {
+      %args = alloca %Lambda_Arguments
+      %1 = getelementptr %Lambda_Arguments* %args, i32 0, i32 0
+      store i32 %a, i32* %1
+      %2 = getelementptr %Lambda_Arguments* %args, i32 0, i32 1
+      store i32 %b, i32* %2
+      %c = call i32 @integer_parse()
+      %3 = getelementptr %Lambda_Arguments* %args, i32 0, i32 2
+      store i32 %c, i32* %3
+      %4 = call i32 @lambda(%Lambda_Arguments* %args, i32 10)
+      ret i32 %4
+   }
+
+Obviously there are some possible variations over this theme:
+
+#. You could pass all implicit as explicit arguments as arguments.
+#. You could pass all implicit as explicit arguments in the structure.
+#. You could pass in a pointer to the frame of the caller and let the lambda
+   function extract the arguments and locals from the input frame.
 
 
 Closures
@@ -518,7 +549,7 @@ A generator is a function that repeatedly yields values in such a way that the
 function's state is preserved across the repeated calls of the function.
 
 Unlike a traditional function, whose state is not preserved across calls, all
-of the generator's state remains across calls to the generator.
+of the generator's state remains across repeated calls to the generator.
 
 The most straigthforward way to implement a generator is by wrapping all of
 its state variables (arguments, local variables, and return values) up into an
@@ -537,7 +568,7 @@ I resort to pseudo-C++ because C++ does not directly support generators:
             yield index - 1;
    }
 
-   extern void output_int(int value);
+   extern void integer_print(int value);
 
    void main(void)
    {
