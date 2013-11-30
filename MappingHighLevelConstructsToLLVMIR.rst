@@ -259,7 +259,7 @@ Becomes:
    %Foo = type { i32 }
 
    declare i8* @malloc(i32)
-   declare void @malloc(i8*)
+   declare void @free(i8*)
 
    define void @allocate() nounwind {
       %1 = call i8* @malloc(i32 4)
