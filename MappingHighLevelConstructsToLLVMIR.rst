@@ -57,6 +57,29 @@ vary. Some will find this document highly useful, others will have no use for
 it. Hopefully, though, it will aid you in getting up to speed with LLVM.
 
 
+Some Useful LLVM Tools
+======================
+The most important LLVM tools for use with this article are as follows:
+
+#. ``llc``: The LLVM IR Compiler.  It compiles a ``.ll`` file into a ``.s``
+   file, which is the assembly output from LLVM.
+#. ``opt``: The LLVM IR Optimizer.  It optimizes a ``.ll`` file into the same
+   ``.ll`` file (unless you specify an output file name using the ``-o=name``
+   option).
+#. ``llvm-dis``: The LLVM ByteCode Dissambler, which creates a ``.ll`` file
+   from a ``.bc`` file.
+#. ``clang`` or ``clang++`` with the ``-emit-llvm`` and ``-c`` options, which
+   generate a ``.bc`` file that you can disassemble using ``llvm-dis``.
+
+In short, the tools work as follows:
+
+#. ``clang`` reads ``.c`` and writes ``.bc`` (when using ``-emit-llvm``).
+#. ``clang++`` reads ``.cpp`` and writes ``.bc`` (when using ``-emit-llvm``).
+#. ``llvm-dis`` reads ``.bc`` and writes ``.ll``.
+#. ``opt`` reads ``.bc`` or ``.ll`` and writes ``.ll``.
+#. ``llc`` reads ``.ll`` and writes ``.s``.
+
+
 Mapping Basic Constructs into LLVM IR
 =====================================
 In this chapter, we'll look at the most basic and simple constructs that are
@@ -509,7 +532,7 @@ arguments to the lambda function:
 
 .. code-block:: llvm
 
-   define i32 @lambda(i32 %a, i32 %x) nounwind {
+   define internal i32 @lambda(i32 %a, i32 %x) alwaysinline nounwind {
       %1 = add i32 %a, %x
       ret i32 %1
    }
