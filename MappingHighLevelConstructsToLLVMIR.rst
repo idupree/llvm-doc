@@ -87,7 +87,8 @@ Global varibles are trivial to implement in LLVM IR:
 
 Please notice that LLVM views global variables as pointers; so you must
 explicitly dereference the global variable using the ``load`` instruction
-when accessing its value.
+when accessing its value, likewise you must explicitly store the value of
+a global variable using the ``store`` instruction.
 
 
 Local Variables
@@ -123,7 +124,11 @@ There are two different kinds of constants:
 
 The former are always expanded inline by the compiler as there seems to be no
 LLVM IR equivalent of those.  In other words, the compiler simply inserts the
-constant value wherever it is being used in a computation.
+constant value wherever it is being used in a computation:
+
+.. code-block:: llvm
+
+   %1 = add i32 %0, 17
 
 Constants that do occupy memory are defined using the ``constant`` keyword:
 
@@ -199,6 +204,16 @@ Becomes:
    {
       ret i32 17
    }
+
+
+Exception-Aware Functions
+"""""""""""""""""""""""""
+A function that is aware of being part of a larger scheme of exception-
+handling is called an exception-aware function.  Depending upon the type of
+exception handling being employed, the function may either return a pointer to
+an exception instance, create a ``setjmp``/``longjmp`` frame, or simply
+specify the ``uwtable`` (for UnWind Table) attribute.  These cases will all be
+covered in great detail in the chapter on Exception Handling below.
 
 
 Function Pointers
