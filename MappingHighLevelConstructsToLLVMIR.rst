@@ -995,10 +995,14 @@ exception handling.
 Resources
 ---------
 
+#. `Compiler Internals - Exception Handling
+   <http://www.hexblog.com/wp-content/uploads/2012/06/Recon-2012-Skochinsky-Compiler-Internals.pdf>`_.
+#. `Exception Handling in C without C++ <http://www.on-time.com/ddj0011.htm>`_.
 #. `How a C++ Compiler Exception Handling
    <http://www.codeproject.com/Articles/2126/How-a-C-compiler-implements-exception-handling>`_.
-#.
-
+#. `DWARF standard - Exception Handling
+   <http://wiki.dwarfstd.org/index.php?title=Exception_Handling>`_.
+#. `Itanium C++ ABI <http://refspecs.linuxfoundation.org/cxxabi-1.86.html>`_.
 
 
 Mapping Object-Oriented Constructs to LLVM IR
@@ -1057,7 +1061,7 @@ We first transform this code into two separate pieces:
    }
 
    ; The Foo::GetLength() method.
-   define void @Foo_GetLength(%Foo* %this) nounwind {
+   define i32 @Foo_GetLength(%Foo* %this) nounwind {
       %1 = getelementptr %Foo* %this, i32 0, i32 0
       %2 = load i32* %this
       ret i32 %2
@@ -1768,4 +1772,8 @@ If you discover any errors in this document or you need more information
 than given here, please write to the friendly `LLVM developers
 <http://lists.cs.uiuc.edu/mailman/listinfo/llvmdev>`_ and they'll surely
 help you out or add the requested info to this document.
+
+Please also remember that you can learn a lot by using the ``-emit-llvm``
+option to the ``clang++`` compiler.  This gives you a chance to see a live
+production compiler in action and precisely how it does things.
 
