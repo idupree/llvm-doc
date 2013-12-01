@@ -1312,7 +1312,7 @@ class.
       int _a;
    };
 
-   class BaseB
+   class BaseB: public BaseA
    {
    public:
       void SetB(int value)
