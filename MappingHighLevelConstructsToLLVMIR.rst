@@ -435,6 +435,12 @@ Nested Structures
 **TODO:** Show an example of a moderately complex nested structure.
 
 
+Mapping Control Structures to LLVM IR
+=====================================
+**TODO:** Add common control structures such as ``if``, ``for``, and
+``while``.
+
+
 Mapping Advanced Constructs to LLVM IR
 ======================================
 In this chapter, we'll look at various non-OOP constructs that are highly
@@ -545,11 +551,8 @@ Closures
 
 Generators
 ----------
-A generator is a function that repeatedly yields values in such a way that the
-function's state is preserved across the repeated calls of the function.
-
-Unlike a traditional function, whose state is not preserved across calls, all
-of the generator's state remains across repeated calls to the generator.
+A generator is a function that repeatedly yields a value in such a way that
+the function's state is preserved across the repeated calls of the function.
 
 The most straigthforward way to implement a generator is by wrapping all of
 its state variables (arguments, local variables, and return values) up into an
@@ -572,30 +575,43 @@ I resort to pseudo-C++ because C++ does not directly support generators:
 
    void main(void)
    {
-      for (int i in foo(0, 5))
-         output_int(i);
+      foreach (int i in foo(0, 5))
+         integer_print(i);
    }
 
 This becomes something like this:
 
-**TODO:** The sample below is broken and only works with a single ``yield``
-statement.  It **must** work with any number of ``yield`` statements.
-
 .. code-block:: llvm
 
    %foo_context = type {
-      i8*      ; 0: block ("global")
-      i32,     ; 1: start (argument)
-      i32,     ; 2: after (argument)
-      i32,     ; 3: index (local)
-      i32,     ; 4: value (result)
-      i1       ; 5: again (result), also used to indicate that it is the first call (= 0)
+      i8*,      ; 0: block (state)
+      i32,      ; 1: start (argument)
+      i32,      ; 2: after (argument)
+      i32,      ; 3: index (local)
+      i32,      ; 4: value (result)
+      i1        ; 5: again (result)
    }
 
-   define void @foo(%foo_context* %context) nounwind {
-      %1 = getelementptr %foo_context* %context, i32 0, i32 5
-      %2 = load i1* %1
-      br i1 %2, label %.head, label %.init
+   define void @foo_setup(%foo_context* %context, i32 %start, i32 %after) nounwind {
+      ; set up 'block'
+      %1 = getelementptr %foo_context* %context, i32 0, i32 0
+      store i8* blockaddress(@foo_yield, %.init), i8** %1
+
+      ; set up 'start'
+      %2 = getelementptr %foo_context* %context, i32 0, i32 1
+      store i32 %start, i32* %2
+
+      ; set up 'after'
+      %3 = getelementptr %foo_context* %context, i32 0, i32 2
+      store i32 %after, i32* %3
+
+      ret void
+   }
+
+   define i1 @foo_yield(%foo_context* %context) nounwind {
+      %1 = getelementptr %foo_context* %context, i32 0, i32 0
+      %2 = load i8** %1
+      indirectbr i8* %2, [ label %.init, label %.head ]
 
    .init:
       ; copy argument 'start' to the local variable 'index'
@@ -612,56 +628,46 @@ statement.  It **must** work with any number of ``yield`` statements.
       %6 = getelementptr %foo_context* %context, i32 0, i32 2
       %after = load i32* %6
       %again = icmp slt i32 %index, %after
-      %7 = getelementptr %foo_context* %context, i32 0, i32 5
-      store i1 %again, i1* %7
-      br i1 %again, label %.next, label %.tail
+      br i1 %again, label %.body, label %.done
+
+   .body:
+      %7 = getelementptr %foo_context* %context, i32 0, i32 0
+      store i8* blockaddress(@foo_yield, %.next), i8** %7
 
    .next:
       ; yield next value
       ; copy 'index' to 'value'
-      %8 = getelementptr %foo_context* %context, i32 0, i32 4
-      store i32 %index, i32* %8
+      %7 = getelementptr %foo_context* %context, i32 0, i32 4
+      store i32 %index, i32* %7
 
      ; increment 'index'
-      %9 = add i32 1, %index
-      store i32 %9, i32* %5
+      %8 = add i32 1, %index
+      store i32 %8, i32* %5
       br label %.tail
 
-   .tail:
-      ret void
+   .done:
+      ret i1 %again
    }
 
-   declare void @output_int(i32)
+
+   declare void @integer_print(i32)
+
 
    define void @main() nounwind {
-      ; allocate generator context structure
+      ; allocate and initialize generator context structure
       %context = alloca %foo_context
-
-      ; set 'start' to 0
-      %1 = getelementptr %foo_context* %context, i32 0, i32 1
-      store i32 0, i32* %1
-
-      ; set 'after' to five
-      %2 = getelementptr %foo_context* %context, i32 0, i32 2
-      store i32 5, i32* %2
-
-      ; set 'block' to init so as to initialize the context
-
-      %3 = getelementptr %foo_context* %context, i32 0, i32 5
-      store i1 0, i1* %3
-
+      call void @foo_setup(%foo_context* %context, i32 0, i32 5)
       br label %.head
 
    .head:
       ; for (int i in foo(0, 5))
-      call void @foo(%foo_context* %context)
-      %4 = load i1* %3
-      br i1 %4, label %.body, label %.tail
+      %1 = call i1 @foo_yield(%foo_context* %context)
+      br i1 %1, label %.body, label %.tail
 
    .body:
-      %5 = getelementptr %foo_context* %context, i32 0, i32 3
-      %6 = load i32* %5
-      call void @output_int(i32 %6)
+      %2 = getelementptr %foo_context* %context, i32 0, i32 4
+      %3 = load i32* %2
+      call void @integer_print(i32 %3)
       br label %.head
 
    .tail:
@@ -722,7 +728,53 @@ This maps to the following code:
 
 .. code-block:: llvm
 
-   %Object = type opaque
+   %Object_vtable = type {
+      %Object_vtable*,     ; 0: above: parent class vtable pointer
+      i8*                   ; 1: clazz: class name (usually mangled)
+      ; virtual methods would follow here
+   }
+
+   %Object = type {
+     %Object_vtable*    ; 0: vtable: class vtable pointer (always non-null)
+     ; class data members would follow here
+   }
+
+   ; returns true if the specified object is identical or derived from
+   ; the class of the specified name.
+   define fastcc i1 @Object_IsA(%Object* %object, i8* %name) nounwind {
+   .init:
+     ; if (object == null) return false
+     %0 = icmp ne %Object* %object, null
+     br i1 %0, label %.once, label %.exit_false
+
+   .once:
+      %1 = getelementptr %Object* %object, i32 0, i32 0
+      br label %.body
+
+   .body:
+      ; if (object->clazz == name)
+      %2 = phi %Object_vtable** [ %1, %.once ], [ %7, %.next]
+     %3 = load %Object_vtable** %2
+      %4 = getelementptr %Object_vtable* %3, i32 0, i32 1
+     %5 = load i8** %4
+      %6 = icmp eq i8* %5, %name
+      br i1 %6, label %.exit_true, label %.next
+
+   .next:
+     ; object = object->above
+      %7 = getelementptr %Object_vtable* %3, i32 0, i32 0
+
+      ; while (object != null)
+      %8 = icmp ne %Object_vtable* %3, null
+      br i1 %8, label %.body, label %.exit_false
+
+   .exit_true:
+      ret i1 true
+
+   .exit_false:
+      ret i1 false
+   }
+
 
    %Exception_vtable_type = type {
      i8*,                      ; 0: parent class vtable pointer
@@ -779,11 +831,9 @@ This maps to the following code:
    declare i8* @malloc(i32)
    declare void @free(i8*)
 
-   declare i1 @RuntimeObjectInheritsFrom(%Object* %object, i8* %name)
-
    define fastcc i8* @xfree(i8* %value) nounwind {
       call void @free(i8* %value)
-     ret i8* null
+      ret i8* null
    }
 
    define fastcc %Exception* @Bar() nounwind {
@@ -807,7 +857,7 @@ This maps to the following code:
    .catch_begin:
       %3 = getelementptr inbounds [10 x i8]* @.Exception_class_name, i32 0, i32 0
       %4 = bitcast %Exception* %status to %Object*
-      %5 = call i1 @RuntimeObjectInheritsFrom(%Object* %4, i8* %3)
+      %5 = call i1 @Object_IsA(%Object* %4, i8* %3)
       br i1 %5, label %.exception_begin, label %.catch_close
 
    .exception_begin:
@@ -833,6 +883,9 @@ then do a ``longjmp`` whenever you throw an exception.  If there are few
 method is not as high as it might seem.  However, often there are implicit
 exception handlers due to the need to release local resources such as class
 instances allocated on the stack and then the cost can become quite high.
+
+``setjmp``/``longjmp`` Exception Handling is often abbreviated ``SjLj``,
+which is an abbreviation of ``SetJmp``/``LongJmp``.
 
 .. code-block:: cpp
 
@@ -883,11 +936,11 @@ This translates into something like this:
    ; jmp_buf is very platform dependent, this is for illustration only...
    %jmp_buf = type { i32 }
    declare int @setjmp(%jmp_buf* %env)
-   declare void @longjmp(%jmp_buf* %env)
+   declare void @longjmp(%jmp_buf* %env, i32 %val)
 
    %Exception = type { i8* }
 
-   define void @Exception_Create(%Exception* %this, i32 %code, i8* %text) nounwind {
+   define void @Exception_Create(%Exception* %this, i8* %text) nounwind {
       %1 = getelementptr %Exception* %this, i32 0, i32 0    ; %1 = &%this._text
       store i8** %1, %text
       ret void
@@ -898,6 +951,8 @@ This translates into something like this:
       %2 = load i8** %1
       ret i8* %2
    }
+
+   @.message = internal constant [42 x i8] c"Syntax: 'program' source-file target-file\00"
 
    define i32 @main(i32 %argc, i8** %argv) nounwind {
       ; "try" keyword expands into this:
@@ -912,12 +967,21 @@ This translates into something like this:
    .saved:
       ; the body of the "try" statement expands to this:
       %4 = icmp eq i32 %argc, 1
-      br i1 %4, label .if_begin, label .if_close
+      br i1 %4, label %.if_begin, label %.if_close
 
    .if_begin:
       %5 = alloca %Exception
+      %6 = getelementptr [42 x i8]* @.message, i32 0, i32 0
+      call void @Exception_Create(%Exception* %5, i8* %6)
+      %7 = bitcast %Exception* %5 to i32
+      call void @longjmp(%jmp_buf* %1, i32 %7)
+      br label %.if_close
+
+   .if_close:
+      ret i32 0      ; EXIT_SUCCESS
 
    .catch:
+
 
 **TODO:** Finish up ``setjmp``/``longjmp`` example.
 
@@ -926,6 +990,15 @@ Zero Cost Exception Handling
 ----------------------------
 **TODO:** Explain how to implement exception handling using zero cost
 exception handling.
+
+
+Resources
+---------
+
+#. `How a C++ Compiler Exception Handling
+   <http://www.codeproject.com/Articles/2126/How-a-C-compiler-implements-exception-handling>`_.
+#.
+
 
 
 Mapping Object-Oriented Constructs to LLVM IR
