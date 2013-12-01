@@ -80,7 +80,7 @@ Global varibles are trivial to implement in LLVM IR:
 
    @variable = global i32 14
 
-   define i32 @test() nounwind {
+   define i32 @main() nounwind {
       %1 = load i32* @variable
       ret i32 %1
    }
@@ -185,8 +185,8 @@ from the calling convention in use, whether the function is exception-aware or
 not, and if the function is to be publicly available outside the module.
 
 
-Simple Functions
-""""""""""""""""
+Simple Public Functions
+"""""""""""""""""""""""
 The most basic model is:
 
 .. code-block:: cpp
@@ -200,8 +200,19 @@ Becomes:
 
 .. code-block:: llvm
 
-   define i32 @Bar() nounwind
-   {
+   define i32 @Bar() nounwind {
+      ret i32 17
+   }
+
+
+Simple Private Functions
+""""""""""""""""""""""""
+A static function is basically a module-private function that cannot be
+referenced from outside of the defining module:
+
+.. code-block:: llvm
+
+   define internal i32 @Foo() nounwind {
       ret i32 17
    }
 
@@ -281,7 +292,8 @@ Becomes:
       %foo = bitcast i8* %1 to %Foo*
       %2 = getelementptr %Foo* %foo, i32 0, i32 0
       store i32 2, i32* %2
-      ret i32 %3
+      call void @free(i8* %1)
+      ret void
    }
 
 
@@ -360,7 +372,7 @@ Floating points numbers can be extended using the ``fpext`` instruction:
 
 .. code-block:: cpp
 
-   float small = 3.141592;
+   float small = 1.25;
    double large;
 
    void main()
@@ -403,8 +415,8 @@ Likewise, a floating point number can be truncated to a smaller size:
 
 Address-Space Casts (Pointer Casts)
 """""""""""""""""""""""""""""""""""
-**TODO:** Find a useful example of a place where address-space casts, using
-the ``addrspacecast`` instruction, to be included here.
+**TODO:** Find a useful example of an address-space casts, using the
+``addrspacecast`` instruction, to be included here.
 
 
 Incomplete Structure Types
@@ -447,13 +459,20 @@ numerals starting from zero:
 
 Nested Structures
 -----------------
-**TODO:** Show an example of a moderately complex nested structure.
+Nested structures are straightforward:
+
+.. code-block:: llvm
+
+   %Object = type {
+      %Object*,      ; 0: above; the parent pointer
+      i32            ; 1: value; the value of the node
+   }
 
 
 Mapping Control Structures to LLVM IR
 =====================================
-**TODO:** Add common control structures such as ``if``, ``for``, and
-``while``.
+**TODO:** Add common control structures such as ``if``, ``for``, ``switch``,
+and ``while``.
 
 
 Mapping Advanced Constructs to LLVM IR
