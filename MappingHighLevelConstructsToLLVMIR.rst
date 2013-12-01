@@ -177,7 +177,7 @@ Function Definitions
 --------------------
 The translation of function definitions depends on a range of factors, ranging
 from the calling convention in use, whether the function is exception-aware or
-not, and whether the function is to be publicly available outside the module.
+not, and if the function is to be publicly available outside the module.
 
 
 Simple Functions
@@ -884,8 +884,8 @@ method is not as high as it might seem.  However, often there are implicit
 exception handlers due to the need to release local resources such as class
 instances allocated on the stack and then the cost can become quite high.
 
-``setjmp``/``longjmp`` Exception Handling is often abbreviated ``SjLj``,
-which is an abbreviation of ``SetJmp``/``LongJmp``.
+``setjmp``/``longjmp`` exception handling is often abbreviated ``SjLj``
+for ``SetJmp``/``LongJmp``.
 
 .. code-block:: cpp
 
@@ -931,7 +931,7 @@ This translates into something like this:
 
 .. code-block:: llvm
 
-   declare int @printf(i8*, ...)
+   declare int @puts(i8*)
 
    ; jmp_buf is very platform dependent, this is for illustration only...
    %jmp_buf = type { i32 }
@@ -1660,7 +1660,7 @@ define a rich set of functions to operate on the type definition:
       i32      ; factor: the number of chars to preallocate when growing
    }
 
-   define void @String_Create_Default(%String* %this) nounwind {
+   define fastcc void @String_Create_Default(%String* %this) nounwind {
       ; Initialize 'buffer'.
       %1 = getelementptr %String* %this, i32 0, i32 0
       store i8* null, i8** %1
@@ -1684,7 +1684,7 @@ define a rich set of functions to operate on the type definition:
    declare void @free(i8*)
    declare i8* @memcpy(i8*, i8*, i32)
 
-   define void @String_Delete(%String* %this) nounwind {
+   define fastcc void @String_Delete(%String* %this) nounwind {
      ; Check if we need to call 'free'.
      %1 = getelementptr %String* %this, i32 0, i32 0
      %2 = load i8** %1
@@ -1699,7 +1699,7 @@ define a rich set of functions to operate on the type definition:
      ret void
    }
 
-   define void @String_Resize(%String* %this, i32 %value) {
+   define fastcc void @String_Resize(%String* %this, i32 %value) {
       ; %output = malloc(%value)
       %output = call i8* @malloc(i32 %value)
 
@@ -1725,7 +1725,7 @@ define a rich set of functions to operate on the type definition:
       ret void
    }
 
-   define void @String_Add_Char(%String* %this, i8 %value) {
+   define fastcc void @String_Add_Char(%String* %this, i8 %value) {
      ; Check if we need to grow the string.
      %1 = getelementptr %String* %this, i32 0, i32 1
      %length = load i32* %1
@@ -1747,6 +1747,8 @@ define a rich set of functions to operate on the type definition:
      %buffer = load i8** %6
      %7 = getelementptr i8* %buffer, i32 %length
      store i8 %value, i8* %7
+     %8 = add i32 %length, 1
+     store i32 %8, i32* %1
 
      ret void
    }
