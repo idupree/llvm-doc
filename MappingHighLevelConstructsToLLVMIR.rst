@@ -730,17 +730,17 @@ This maps to the following code:
 
    %Object_vtable = type {
       %Object_vtable*,     ; 0: above: parent class vtable pointer
-      i8*                   ; 1: clazz: class name (usually mangled)
+      i8*                  ; 1: class: class name (usually mangled)
       ; virtual methods would follow here
    }
 
    %Object = type {
-     %Object_vtable*    ; 0: vtable: class vtable pointer (always non-null)
+     %Object_vtable*       ; 0: vtable: class vtable pointer (always non-null)
      ; class data members would follow here
    }
 
-   ; returns true if the specified object is identical or derived from
-   ; the class of the specified name.
+   ; returns true if the specified object is identical or derived from the
+   ; class of the specified name.
    define fastcc i1 @Object_IsA(%Object* %object, i8* %name) nounwind {
    .init:
      ; if (object == null) return false
@@ -752,7 +752,7 @@ This maps to the following code:
       br label %.body
 
    .body:
-      ; if (object->clazz == name)
+      ; if (vtable->class == name)
       %2 = phi %Object_vtable** [ %1, %.once ], [ %7, %.next]
      %3 = load %Object_vtable** %2
       %4 = getelementptr %Object_vtable* %3, i32 0, i32 1
