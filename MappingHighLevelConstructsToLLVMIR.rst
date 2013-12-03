@@ -272,10 +272,10 @@ Casts
 There are seven different types of casts:
 
 #. Bitwise casts (type casts).
-#. Zero-extending casts (unsigned upcast).
-#. Sign-extending casts (signed upcast).
-#. Truncating casts (signed and unsigned downcast).
-#. Floating-point extending casts (float upcast).
+#. Zero-extending casts (unsigned upcasts).
+#. Sign-extending casts (signed upcasts).
+#. Truncating casts (signed and unsigned downcasts).
+#. Floating-point extending casts (float upcasts).
 #. Floating-point truncating casts (float downcasts).
 #. Address-space casts (pointer casts).
 
