@@ -237,7 +237,7 @@ referenced from outside of the defining module:
 
 .. code-block:: llvm
 
-   define internal i32 @Foo() nounwind {
+   define private i32 @Foo() nounwind {
       ret i32 17
    }
 
