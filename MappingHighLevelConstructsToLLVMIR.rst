@@ -35,7 +35,7 @@ Here are a few things that you should know before reading this document:
 #. LLVM IR does not differentiate between signed and unsigned integers.
 #. LLVM IR assumes two's complement signed integers so that say ``trunc``
    works equally well on signed and unsigned integers.
-#. Global symbols begin with an ambersand (@).
+#. Global symbols begin with an ampersand (@).
 #. Local symbols begin with a percent symbol (%).
 #. All symbols must be declared or defined.
 #. Don't worry that the LLVM IR at times can see somewhat lengthy when it
@@ -267,7 +267,7 @@ Becomes:
 
 Casts
 -----
-Casts are basically seven different types of casts:
+There are seven different types of casts:
 
 #. Bitwise casts (type casts).
 #. Zero-extending casts (unsigned upcast).
@@ -514,7 +514,7 @@ for the lambda function.  There are a few different ways of implementing
 lambda functions (see `Wikipedia on nested functions
 <http://en.wikipedia.org/wiki/Nested_function>`_ for more information).
 
-I'll give an example in pseudo-C++ because C++ does not incorporate lambda
+I'll give an example in pseudo-C++ because C++ does not currently support lambda
 functions:
 
 .. code-block:: cpp
@@ -736,24 +736,24 @@ Mapping Exception Handling to LLVM IR
 =====================================
 Exceptions can be implemented in one of three ways:
 
-#. The simple way by using a propagated return value.
-#. The bulky way by using ``setjmp`` and ``longjmp``.
-#. The efficient way by using zero overhead stack unwinding.
+#. The simple way, by using a propagated return value.
+#. The bulky way, by using ``setjmp`` and ``longjmp``.
+#. The efficient way, by using a zero-cost exception ABI.
 
 Please notice that many compiler developers with respect for themselves won't
 accept the first method as a proper way of handling exceptions.  However, it
 is unbeatable in terms of simplicity and can likely help people to understand
 that implementing exceptions does not need to be very difficult.
 
-The second method is used by some production compilers, but it has a large
+The second method is used by some production compilers, but it has large
 overhead both in terms of code bloat and the cost of a ``try-catch`` statement
-also becomes quite high because all CPU registers are saved using ``setjmp``
-whenever a ``try`` statement is encountered.
+(because all CPU registers are saved using ``setjmp`` whenever a ``try``
+statement is encountered).
 
-The third method is very advanced but in return is zero cost in terms of not
-adding any explicit code to save registers or check return values.  This last
-method is the de-facto "right" way of implementing exceptions, whether you
-like it or not.  LLVM directly supports this kind of exception handling.
+The third method is very advanced but in return does not add any costs to
+execution paths where no exceptions are being thrown. This method is the
+de-facto "right" way of implementing exceptions, whether you like it or not.
+LLVM directly supports this kind of exception handling.
 
 
 Exception Handling by Propagated Return Value
