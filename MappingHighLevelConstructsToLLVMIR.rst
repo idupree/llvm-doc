@@ -1710,6 +1710,10 @@ example, I'll go ahead and illustrate a simple but useful string type in LLVM
 IR.  It assumes a 32-bit architecture, so please replace all occurences of
 ``i32`` with ``i64`` if you are targetting a 64-bit architecture.
 
+We'll be making a dynamic, mutable string type that can be appended to and
+could also be inserted into, converted to lower case, and so on, depending on
+which support functions are defined to operate on the string type.
+
 It all boils down to making a suitable type definition for the class and then
 define a rich set of functions to operate on the type definition:
 
