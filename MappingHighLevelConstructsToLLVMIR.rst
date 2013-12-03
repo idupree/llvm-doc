@@ -242,6 +242,26 @@ referenced from outside of the defining module:
    }
 
 
+Functions with a Variable Number of Parameters
+""""""""""""""""""""""""""""""""""""""""""""""
+To call a so-called vararg function, you first need to define or declare it
+using the elipsis (...) and then you need to do an explicit cast to the
+function profile in question when you call it as LLVM is very strict about
+types and whatever arguments you pass are going to mismatch with the elipsis:
+
+.. code-block
+
+   declare i32 @printf(i8*, ...) nounwind
+
+   @.text = internal constant [20 x i8] c"Argument count: %d\0A\00"
+
+   define i32 @main(i32 %argc, i8** %argv) nounwind {
+      ; printf("Argument count: %d\n", argc)
+      %1 = call i32 (i8*, ...)* @printf(i8* getelementptr([20 x i8]* @.text, i32 0, i32 0), i32 %argc)
+      ret i32 0
+   }
+
+
 Exception-Aware Functions
 """""""""""""""""""""""""
 A function that is aware of being part of a larger scheme of exception-
@@ -768,38 +788,106 @@ environments - it is all a matter of returning a pointer to an exception:
 
 .. code-block:: cpp
 
-   void Bar()
+   #include <stdio.h>
+   #include <stddef.h>
+
+   class Foo
+   {
+   public:
+      int GetLength() const
+      {
+         return _length;
+      }
+
+      void SetLength(int value)
+      {
+         _length = value;
+      }
+
+   private:
+      int _length;
+   };
+
+   int Bar(bool fail)
    {
       Foo foo;
+      foo.SetLength(17);
+      if (fail)
+            throw new Exception("Exception requested by caller");
+      foo.SetLength(24);
+      return foo.GetLength();
+   }
+
+   int main(int argc, const char *argv[])
+   {
+      int result;
+
       try
       {
-         foo.SetLength(17);
-         throw new Error("Out of sensible things to do!");
+         /* First call does not throw an exception. */
+         int value = Bar(false);
+
+         /* Second call throws an exception. */
+         value = Bar(true);
+
+         /* We never get here. */
+         result = EXIT_SUCCESS;
       }
-      catch (Error *that)
+      catch (Exception *that)
       {
-         foo.SetLength(24);
-         delete that;
+         printf("Error: %s\n", that->GetText());
+         result = EXIT_FAILURE;
       }
+      catch (...)
+      {
+         puts("Internal error: Unhandled exception detected");
+         result = EXIT_FAILURE;
+      }
+
+      return result;
    }
+
 
 This maps to the following code:
 
+**TODO:** Make the code below run; it compiles but does not run yet.
+
 .. code-block:: llvm
 
-   %Object_vtable = type {
-      %Object_vtable*,     ; 0: above: parent class vtable pointer
-      i8*                  ; 1: class: class name (usually mangled)
+   ;********************* External and Utility functions *********************
+
+   declare i8* @malloc(i32) nounwind
+   declare void @free(i8*) nounwind
+   declare i32 @printf(i8* noalias nocapture, ...) nounwind
+   declare i32 @puts(i8* noalias nocapture) nounwind
+
+   define fastcc i8* @xfree(i8* %value) nounwind {
+      call void @free(i8* %value)
+      ret i8* null
+   }
+
+   ;***************************** Object class *******************************
+
+   %Object_vtable_type = type {
+      %Object_vtable_type*,         ; 0: above: parent class vtable pointer
+      i8*                           ; 1: class: class name (usually mangled)
       ; virtual methods would follow here
    }
 
+   @.Object_class_name = private constant [7 x i8] c"Object\00"
+
+   @.Object_vtable = private constant %Object_vtable_type {
+     %Object_vtable_type* null,  ; This is the root object of the object hierarchy
+      i8* getelementptr([7 x i8]* @.Object_class_name, i32 0, i32 0)
+   }
+
    %Object = type {
-     %Object_vtable*       ; 0: vtable: class vtable pointer (always non-null)
+     %Object_vtable_type*        ; 0: vtable: class vtable pointer (always non-null)
      ; class data members would follow here
    }
 
-   ; returns true if the specified object is identical or derived from the
-   ; class of the specified name.
+   ; returns true if the specified object is identical to or derived from the
+   ; class with the specified name.
    define fastcc i1 @Object_IsA(%Object* %object, i8* %name) nounwind {
    .init:
      ; if (object == null) return false
@@ -812,19 +900,19 @@ This maps to the following code:
 
    .body:
       ; if (vtable->class == name)
-      %2 = phi %Object_vtable** [ %1, %.once ], [ %7, %.next]
-     %3 = load %Object_vtable** %2
-      %4 = getelementptr %Object_vtable* %3, i32 0, i32 1
-     %5 = load i8** %4
+      %2 = phi %Object_vtable_type** [ %1, %.once ], [ %7, %.next]
+      %3 = load %Object_vtable_type** %2
+      %4 = getelementptr %Object_vtable_type* %3, i32 0, i32 1
+      %5 = load i8** %4
       %6 = icmp eq i8* %5, %name
       br i1 %6, label %.exit_true, label %.next
 
    .next:
-     ; object = object->above
-      %7 = getelementptr %Object_vtable* %3, i32 0, i32 0
+      ; object = object->above
+      %7 = getelementptr %Object_vtable_type* %3, i32 0, i32 0
 
       ; while (object != null)
-      %8 = icmp ne %Object_vtable* %3, null
+      %8 = icmp ne %Object_vtable_type* %3, null
       br i1 %8, label %.body, label %.exit_false
 
    .exit_true:
@@ -835,24 +923,27 @@ This maps to the following code:
    }
 
 
+   ;*************************** Exception class ******************************
+
    %Exception_vtable_type = type {
-     i8*,                      ; 0: parent class vtable pointer
-     i8*                       ; 1: class name
+     %Object_vtable_type*,                         ; 0: parent class vtable pointer
+     i8*                                           ; 1: class name
      ; virtual methods would follow here.
    }
 
-   @.Exception_class_name = internal constant [10 x i8] c"Exception\00"
-   @.Exception_vtable = internal constant %Exception_vtable_type {
-      i8* null,                ; this class has no parent
-     i8* getelementptr([10 x i8]* @.Exception_class_name, i32 0, i32 0)
+   @.Exception_class_name = private constant [10 x i8] c"Exception\00"
+
+   @.Exception_vtable = private constant %Exception_vtable_type {
+      %Object_vtable_type* @.Object_vtable,        ; the parent of this class is the Object class
+      i8* getelementptr([10 x i8]* @.Exception_class_name, i32 0, i32 0)
    }
 
    %Exception = type {
-     %Exception_vtable_type*,  ; 0: the vtable pointer
-     i8*                       ; 1: the _text member
+     %Exception_vtable_type*,                      ; 0: the vtable pointer
+     i8*                                           ; 1: the _text member
    }
 
-   define fastcc void @.Exception_Create_String(%Exception* %this, i8* %text) nounwind {
+   define fastcc void @Exception_Create_String(%Exception* %this, i8* %text) nounwind {
      ; set up vtable
      %1 = getelementptr %Exception* %this, i32 0, i32 0
      store %Exception_vtable_type* @.Exception_vtable, %Exception_vtable_type** %1
@@ -864,12 +955,14 @@ This maps to the following code:
      ret void
    }
 
-   define fastcc i8* @.Exception_GetText(%Exception* %this) nounwind {
+   define fastcc i8* @Exception_GetText(%Exception* %this) nounwind {
      %1 = getelementptr %Exception* %this, i32 0, i32 1
      %2 = load i8** %1
      ret i8* %2
    }
 
+
+   ;******************************* Foo class ********************************
 
    %Foo = type { i32 }
 
@@ -879,57 +972,109 @@ This maps to the following code:
      ret void
    }
 
+   define fastcc i32 @Foo_GetLength(%Foo* %this) nounwind {
+      %1 = getelementptr %Foo* %this, i32 0, i32 0
+      %2 = load i32* %1
+      ret i32 %2
+   }
+
    define fastcc void @Foo_SetLength(%Foo* %this, i32 %value) nounwind {
      %1 = getelementptr %Foo* %this, i32 0, i32 0
      store i32 %value, i32* %1
      ret void
    }
 
-   @.message = internal constant [30 x i8] c"Out of sensible things to do!\00"
 
-   declare i8* @malloc(i32)
-   declare void @free(i8*)
+   ;********************************* Foo function ***************************
 
-   define fastcc i8* @xfree(i8* %value) nounwind {
-      call void @free(i8* %value)
-      ret i8* null
+   %Bar_Result = type {
+      %Exception*,               ; pointer to exception or null if none
+      i32                        ; actual return value of the function
    }
 
-   define fastcc %Exception* @Bar() nounwind {
-     ; Allocate Foo instance
+   @.message1 = internal constant [30 x i8] c"Exception requested by caller\00"
+
+   define fastcc %Bar_Result @Bar(i1 %fail) nounwind {
+      ; Allocate Foo instance
       %foo = alloca %Foo
       call void @Foo_Create_Default(%Foo* %foo)
 
-      ; "try" statement becomes nothing.
-
-      ; Body of "try" statement becomes this:
       call void @Foo_SetLength(%Foo* %foo, i32 17)
 
-      %1 = call i8* @malloc(i32 8)
-      %status = bitcast i8* %1 to %Exception*
-      %2 = getelementptr [30 x i8]* @.message, i32 0, i32 0
-      call void @.Exception_Create_String(%Exception* %status, i8* %2)
+      ; if (fail)
+      %1 = icmp eq i1 %fail, true
+      br i1 %1, label %.if_begin, label %.if_close
 
-      %catch = icmp ne %Exception* %status, null
-      br i1 %catch, label %.catch_begin, label %.catch_close
+   .if_begin:
+      ; throw new Exception(...)
+      %2 = call i8* @malloc(i32 8)
+      %3 = bitcast i8* %2 to %Exception*
+      %4 = getelementptr [30 x i8]* @.message1, i32 0, i32 0
+      call void @Exception_Create_String(%Exception* %3, i8* %4)
+      br label %.exit
 
-   .catch_begin:
-      %3 = getelementptr inbounds [10 x i8]* @.Exception_class_name, i32 0, i32 0
-      %4 = bitcast %Exception* %status to %Object*
-      %5 = call i1 @Object_IsA(%Object* %4, i8* %3)
-      br i1 %5, label %.exception_begin, label %.catch_close
-
-   .exception_begin:
+   .if_close:
+      ; foo.SetLength(24)
       call void @Foo_SetLength(%Foo* %foo, i32 24)
-      ; call void @.Exception_Delete(%Exception* %status)
-      %6 = bitcast %Exception* %status to i8*
-      %7 = call i8* @xfree(i8* %6)
-      %8 = bitcast i8* %7 to %Exception*
-      br label %.catch_close
+      %5 = call i32 @Foo_GetLength(%Foo* %foo)
+      br label %.exit
 
-   .catch_close:
-      %9 = phi %Exception* [ %status, %0 ], [ %status, %.catch_begin], [ %8, %.exception_begin ]
-      ret %Exception* %9
+    .exit:
+      ; return initialized %Bar_Result structure
+      %6 = phi %Exception* [ %3, %.if_begin ], [ null, %.if_close ]
+      %7 = phi i32 [ 0, %.if_begin ], [ %5, %.if_close ]
+      %8 = insertvalue %Bar_Result undef, %Exception* %6, 0
+      %9 = insertvalue %Bar_Result %8, i32 %7, 1
+      ret %Bar_Result %9
+   }
+
+
+   ;********************************* Main program ***************************
+
+   @.message2 = internal constant [11 x i8] c"Error: %s\0A\00"
+   @.message3 = internal constant [44 x i8] c"Internal error: Unhandled exception detectd\00"
+
+   define i32 @main(i32 %argc, i8** %argv) nounwind {
+      ; "try" keyword expands to nothing.
+
+      ; Body of try block.
+      ; First call.
+      %1 = call %Bar_Result @Bar(i1 false)
+      %2 = extractvalue %Bar_Result %1, 0
+      %3 = icmp eq %Exception* %2, null
+      br i1 %3, label %.second, label %.catch_block
+
+      ; Second call.
+   .second:
+      %4 = call %Bar_Result @Bar(i1 true)
+      %5 = extractvalue %Bar_Result %4, 0
+      %6 = icmp eq %Exception* %5, null
+      br i1 %6, label %.success, label %.catch_block
+
+   .success:
+      br label %.exit
+
+   .catch_block:
+      %7 = phi %Exception* [ %2, %0 ], [ %5, %.second ]
+      %8 = getelementptr inbounds [10 x i8]* @.Exception_class_name, i32 0, i32 0
+      %9 = bitcast %Exception* %7 to %Object*
+      %10 = call i1 @Object_IsA(%Object* %9, i8* %8)
+      br i1 %10, label %.catch_exception, label %.catch_all
+
+   .catch_exception:
+      %11 = getelementptr inbounds [11 x i8]* @.message2, i32 0, i32 0
+      %12 = call i8* @Exception_GetText(%Exception* %7)
+      %13 = call i32 (i8*, ...)* @printf(i8* %11, i8* %12)
+      br label %.exit
+
+   .catch_all:
+      %14 = getelementptr inbounds [44 x i8]* @.message3, i32 0, i32 0
+      %15 = call i32 @puts(i8* %14)
+      br label %.exit
+
+   .exit:
+      %result = phi i32 [ 0, %.success ], [ 1, %.catch_exception ], [ 1, %.catch_all ]
+      ret i32 %result
    }
 
 
