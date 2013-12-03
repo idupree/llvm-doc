@@ -249,7 +249,7 @@ using the elipsis (...) and then you need to do an explicit cast to the
 function profile in question when you call it as LLVM is very strict about
 types and whatever arguments you pass are going to mismatch with the elipsis:
 
-.. code-block
+.. code-block:: llvm
 
    declare i32 @printf(i8*, ...) nounwind
 
