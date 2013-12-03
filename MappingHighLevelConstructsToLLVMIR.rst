@@ -68,15 +68,17 @@ The most important LLVM tools for use with this article are as follows:
    option).
 #. ``llvm-dis``: The LLVM ByteCode Dissambler, which creates a ``.ll`` file
    from a ``.bc`` file.
-#. ``clang`` or ``clang++`` with the ``-emit-llvm`` and ``-c`` options, which
-   generate a ``.bc`` file that you can disassemble using ``llvm-dis``.
+#. ``clang`` or ``clang++`` with the ``-emit-llvm``, ``-c``, and ``-S``
+   options, which generate a ``.ll`` file.
 
 In short, the tools work as follows:
 
-#. ``clang`` reads ``.c`` and writes ``.bc`` (when using ``-emit-llvm``).
-#. ``clang++`` reads ``.cpp`` and writes ``.bc`` (when using ``-emit-llvm``).
+#. ``clang`` reads ``.c`` and writes ``.ll`` (when using
+   ``-c -emit-llvm -S``).
+#. ``clang++`` reads ``.cpp`` and writes ``.ll`` (when using
+   ``-c -emit-llvm -S``).
 #. ``llvm-dis`` reads ``.bc`` and writes ``.ll``.
-#. ``opt`` reads ``.bc`` or ``.ll`` and writes ``.ll`` or ``.bc``.
+#. ``opt`` reads ``.bc`` or ``.ll`` and writes the same as the input.
 #. ``llc`` reads ``.ll`` and writes ``.s``.
 
 
