@@ -294,7 +294,7 @@ bitcast of a pointer to byte into a pointer to some structure as follows:
    } Foo;
 
    extern void *malloc(size_t size);
-   extern void *free(void *value);
+   extern void free(void *value);
 
    void allocate()
    {
