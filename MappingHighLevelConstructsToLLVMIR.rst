@@ -38,7 +38,7 @@ Here are a few things that you should know before reading this document:
 #. Global symbols begin with an ambersand (@).
 #. Local symbols begin with a percent symbol (%).
 #. All symbols must be declared or defined.
-#. Don't worry that the LLVM IR at times can see somewhat lengthy when it
+#. Don't worry that the LLVM IR at times can seem somewhat lengthy when it
    comes to expressing something; the optimizer will ensure the output is
    well optimized and you'll often see two or three LLVM IR instructions be
    coalesced into a single machine code instruction.
@@ -76,7 +76,7 @@ In short, the tools work as follows:
 #. ``clang`` reads ``.c`` and writes ``.bc`` (when using ``-emit-llvm``).
 #. ``clang++`` reads ``.cpp`` and writes ``.bc`` (when using ``-emit-llvm``).
 #. ``llvm-dis`` reads ``.bc`` and writes ``.ll``.
-#. ``opt`` reads ``.bc`` or ``.ll`` and writes ``.ll``.
+#. ``opt`` reads ``.bc`` or ``.ll`` and writes ``.ll`` or ``.bc``.
 #. ``llc`` reads ``.ll`` and writes ``.s``.
 
 
@@ -444,10 +444,10 @@ Address-Space Casts (Pointer Casts)
 
 Incomplete Structure Types
 --------------------------
-Incomplete types are very useful for hiding the details of what a given
-structure has of fields.  A well-designed C interface can be made so that
-no details of the structure are revealed to the client so that the client
-cannot inspect or modify private members inside the structure:
+Incomplete types are very useful for hiding the details of what fields a given
+structure has.  A well-designed C interface can be made so that no details of
+the structure are revealed to the client, so that the client cannot inspect or
+modify private members inside the structure:
 
 .. code-block:: c
 
