@@ -893,13 +893,12 @@ In the three sections below, we'll be using this sample and transform it:
 
       try
       {
-         /* First call does not throw an exception. */
-         int value = Bar(false);
+         /* The program throws an exception if an argument is specified. */
+         bool fail = (argc >= 2);
 
-         /* Second call throws an exception. */
-         value = Bar(true);
+         /* Let callee decide if an exception is thrown. */
+         value = Bar(fail);
 
-         /* We never get here. */
          result = EXIT_SUCCESS;
       }
       catch (Exception *that)
@@ -1103,38 +1102,35 @@ This maps to the following code:
       ; "try" keyword expands to nothing.
 
       ; Body of try block.
-      ; First call.
-      %1 = alloca i32
-      %2 = call %Exception* @Bar(i1 false, i32* %1)
-      %3 = icmp eq %Exception* %2, null
-      br i1 %3, label %.second, label %.catch_block
 
-      ; Second call.
-   .second:
-      %4 = call %Exception* @Bar(i1 true, i32* %1)
-      %5 = icmp eq %Exception* %4, null
-      br i1 %5, label %.exit, label %.catch_block
+      ; fail = (argc >= 2)
+      %fail = icmp uge i32 %argc, 2
+
+      ; Function call.
+      %1 = alloca i32
+      %2 = call %Exception* @Bar(i1 %fail, i32* %1)
+      %3 = icmp ne %Exception* %2, null
+      br i1 %3, label %.catch_block, label %.exit
 
    .catch_block:
-      %6 = phi %Exception* [ %2, %0 ], [ %4, %.second ]
-      %7 = getelementptr [10 x i8]* @.Exception_class_name, i32 0, i32 0
-      %8 = bitcast %Exception* %6 to %Object*
-      %9 = call i1 @Object_IsA(%Object* %8, i8* %7)
-      br i1 %9, label %.catch_exception, label %.catch_all
+      %4 = bitcast %Exception* %2 to %Object*
+      %5 = getelementptr [10 x i8]* @.Exception_class_name, i32 0, i32 0
+      %6 = call i1 @Object_IsA(%Object* %4, i8* %5)
+      br i1 %6, label %.catch_exception, label %.catch_all
 
    .catch_exception:
-      %10 = getelementptr [11 x i8]* @.message2, i32 0, i32 0
-      %11 = call i8* @Exception_GetText(%Exception* %6)
-      %12 = call i32 (i8*, ...)* @printf(i8* %10, i8* %11)
+      %7 = getelementptr [11 x i8]* @.message2, i32 0, i32 0
+      %8 = call i8* @Exception_GetText(%Exception* %2)
+      %9 = call i32 (i8*, ...)* @printf(i8* %7, i8* %8)
       br label %.exit
 
    .catch_all:
-      %13 = getelementptr [44 x i8]* @.message3, i32 0, i32 0
-      %14 = call i32 @puts(i8* %13)
+      %10 = getelementptr [44 x i8]* @.message3, i32 0, i32 0
+      %11 = call i32 @puts(i8* %10)
       br label %.exit
 
    .exit:
-      %result = phi i32 [ 0, %.second ], [ 1, %.catch_exception ], [ 1, %.catch_all ]
+      %result = phi i32 [ 0, %0 ], [ 1, %.catch_exception ], [ 1, %.catch_all ]
       ret i32 %result
    }
 
