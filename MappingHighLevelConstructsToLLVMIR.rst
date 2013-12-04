@@ -173,7 +173,21 @@ Please notice that ``alloca`` yields a pointer to the allocated type.  As is
 generally the case in LLVM, you must explicitly use a ``load`` or ``store``
 instruction to read or write the value respectively.
 
+The use of ``alloca`` allows for a neat trick that can simplify your code
+generator in many cases.  The trick is to explicitly allocate all mutable
+variables, including arguments, on the stack, initialize them with the
+appropriate initial value and then operate on the stack as if that was your
+end goal.  The trick is to run the "memory to register promotion" pass on your
+code as part of the optimization phase.  This will make LLVM store as many of
+the stack variables in registers as it possibly can.  That way you don't have
+to ensure that the generated program is in SSA form but can generate code
+without having to worry about this aspect of the code generation.
 
+The trick is described in chapter `7.4, Mutable Variables in Kaleidoscope,
+in the OCaml tutorial
+<http://llvm.org/docs/tutorial/OCamlLangImpl7.html#mutable-variables-in-kaleidoscope>`_.
+
+**TODO:** Insert proper Sphinx link to the above chapter.
 
 
 Constants
@@ -183,9 +197,9 @@ There are two different kinds of constants:
 #. Constants that do *not* occupy allocated memory.
 #. Constants that *do* occupy allocated memory.
 
-The former are always expanded inline by the compiler as there seems to be no
-LLVM IR equivalent of those.  In other words, the compiler simply inserts the
-constant value wherever it is being used in a computation:
+The former are always expanded inline by the compiler as there is no LLVM IR
+equivalent of those.  In other words, the compiler simply inserts the constant
+value wherever it is being used in a computation:
 
 .. code-block:: llvm
 
