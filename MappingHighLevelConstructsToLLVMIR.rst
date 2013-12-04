@@ -7,6 +7,28 @@ Mapping High-Level Constructs to LLVM IR
    :depth: 2
 
 
+Task List
+=========
+This chapter serves as an informal task list and is to be deleted before
+review:
+
+#. Local Variables: Explain the "alloca trick", which makes it possible for
+   a front-end to avoid building SSA.  Include an example.
+#. How to enable debug information?  (Line and Function, Variable)
+#. How to interface with a garbage collector? (link to existing docs)
+#. How to express a custom calling convention? (link to existing docs)
+#. Representing constructors, destructors, finalization
+#. How to examine the stack at runtime?  How to modify it?  (i.e. reflection, interjection)
+#. Representing subtyping checks (with full alias info), TBAA, struct-path TBAA
+#. How to exploit inlining (external, vs within LLVM)?
+#. How to express array bounds checks for best optimization?
+#. How to express null pointer checks?
+#. How to express domain specific optimizations?  (i.e. lock elision, or matrix math simplification) (link to existing docs)
+#. How to optimize call dispatch or field access in dynamic languages? (ref new patchpoint intrinsics for inline call caching and field access caching)
+
+**TODO:** Ask various front-end implementors (Rust, Haskell (GHC), Rubinius,
+and more) to review and/or contribute so as to make the document great.
+
 Introduction
 ============
 In this document we will take a look at how to map various classic high-level
@@ -169,6 +191,17 @@ Constants that do occupy memory are defined using the ``constant`` keyword:
    @hello = internal constant [6 x i8] c"hello\00"
    %struct = type { i32, i8 }
    @struct_constant = internal constant %struct { i32 16, i8 4 }
+
+Such constants are globals variables, unless specifically marked with
+``private``, ``internal``, or another modifier that limits its visibility to
+the current module.
+
+
+Constant Expressions
+--------------------
+**TODO:** Document the various forms of constant expressions that exist and
+how they can be very useful.  For instance, ``getelementptr`` constant
+expressions are almost unavoidable in all but the simplest programs.
 
 
 Size-Of Computations
@@ -522,6 +555,18 @@ Nested structures are straightforward:
       %Object*,      ; 0: above; the parent pointer
       i32            ; 1: value; the value of the node
    }
+
+
+Unions
+------
+**TODO:** Document how create a union and how to use it.
+
+
+Structure Expressions
+---------------------
+**TODO:** Document how to perform various computations on structures - get a
+member, update a member, get a pointer to a member, load from a
+pointer-to-member, and so forth.
 
 
 Mapping Control Structures to LLVM IR
@@ -1774,6 +1819,18 @@ is mapped into a loop that initializes each array element in turn:
    .loop_tail:
       ret void
    }
+
+
+Interoperating with a Runtime Library
+=====================================
+Explain that it is common to provide a set of run-time support functions that
+are written in another language than LLVM IR and that it is trivially easy to
+interface to such a run-time library.  Give examples of this.
+
+The advantages of a custom, non-IR run-time library function is that it can be
+optimized by hand to provide the best possible performance under certain
+criteria.  The advantages of IR run-time library functions is that they can be
+inlined automatically by the optimizer.
 
 
 Interfacing to the Operating System
