@@ -897,7 +897,7 @@ In the three sections below, we'll be using this sample and transform it:
          bool fail = (argc >= 2);
 
          /* Let callee decide if an exception is thrown. */
-         value = Bar(fail);
+         int value = Bar(fail);
 
          result = EXIT_SUCCESS;
       }
