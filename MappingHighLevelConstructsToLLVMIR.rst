@@ -954,22 +954,22 @@ This maps to the following code:
    @.Object_class_name = private constant [7 x i8] c"Object\00"
 
    @.Object_vtable = private constant %Object_vtable_type {
-     %Object_vtable_type* null,  ; This is the root object of the object hierarchy
+      %Object_vtable_type* null,    ; This is the root object of the object hierarchy
       i8* getelementptr([7 x i8]* @.Object_class_name, i32 0, i32 0)
    }
 
    %Object = type {
-     %Object_vtable_type*        ; 0: vtable: class vtable pointer (always non-null)
-     ; class data members would follow here
+      %Object_vtable_type*          ; 0: vtable: class vtable pointer (always non-null)
+      ; class data members would follow here
    }
 
    ; returns true if the specified object is identical to or derived from the
    ; class with the specified name.
    define i1 @Object_IsA(%Object* %object, i8* %name) nounwind {
    .init:
-     ; if (object == null) return false
-     %0 = icmp ne %Object* %object, null
-     br i1 %0, label %.once, label %.exit_false
+      ; if (object == null) return false
+      %0 = icmp ne %Object* %object, null
+      br i1 %0, label %.once, label %.exit_false
 
    .once:
       %1 = getelementptr %Object* %object, i32 0, i32 0
@@ -1003,9 +1003,9 @@ This maps to the following code:
    ;*************************** Exception class ******************************
 
    %Exception_vtable_type = type {
-     %Object_vtable_type*,                         ; 0: parent class vtable pointer
-     i8*                                           ; 1: class name
-     ; virtual methods would follow here.
+      %Object_vtable_type*,                        ; 0: parent class vtable pointer
+      i8*                                          ; 1: class name
+      ; virtual methods would follow here.
    }
 
    @.Exception_class_name = private constant [10 x i8] c"Exception\00"
@@ -1016,26 +1016,26 @@ This maps to the following code:
    }
 
    %Exception = type {
-     %Exception_vtable_type*,                      ; 0: the vtable pointer
-     i8*                                           ; 1: the _text member
+      %Exception_vtable_type*,                     ; 0: the vtable pointer
+      i8*                                          ; 1: the _text member
    }
 
    define void @Exception_Create_String(%Exception* %this, i8* %text) nounwind {
-     ; set up vtable
-     %1 = getelementptr %Exception* %this, i32 0, i32 0
-     store %Exception_vtable_type* @.Exception_vtable, %Exception_vtable_type** %1
+      ; set up vtable
+      %1 = getelementptr %Exception* %this, i32 0, i32 0
+      store %Exception_vtable_type* @.Exception_vtable, %Exception_vtable_type** %1
 
-     ; save input text string into _text
-     %2 = getelementptr %Exception* %this, i32 0, i32 1
-     store i8* %text, i8** %2
+      ; save input text string into _text
+      %2 = getelementptr %Exception* %this, i32 0, i32 1
+      store i8* %text, i8** %2
 
-     ret void
+      ret void
    }
 
    define i8* @Exception_GetText(%Exception* %this) nounwind {
-     %1 = getelementptr %Exception* %this, i32 0, i32 1
-     %2 = load i8** %1
-     ret i8* %2
+      %1 = getelementptr %Exception* %this, i32 0, i32 1
+      %2 = load i8** %1
+      ret i8* %2
    }
 
 
@@ -1044,9 +1044,9 @@ This maps to the following code:
    %Foo = type { i32 }
 
    define void @Foo_Create_Default(%Foo* %this) nounwind {
-     %1 = getelementptr %Foo* %this, i32 0, i32 0
-     store i32 0, i32* %1
-     ret void
+      %1 = getelementptr %Foo* %this, i32 0, i32 0
+      store i32 0, i32* %1
+      ret void
    }
 
    define i32 @Foo_GetLength(%Foo* %this) nounwind {
@@ -1056,9 +1056,9 @@ This maps to the following code:
    }
 
    define void @Foo_SetLength(%Foo* %this, i32 %value) nounwind {
-     %1 = getelementptr %Foo* %this, i32 0, i32 0
-     store i32 %value, i32* %1
-     ret void
+      %1 = getelementptr %Foo* %this, i32 0, i32 0
+      store i32 %value, i32* %1
+      ret void
    }
 
 
@@ -1090,7 +1090,7 @@ This maps to the following code:
       call void @Foo_SetLength(%Foo* %foo, i32 24)
       %5 = call i32 @Foo_GetLength(%Foo* %foo)
       store i32 %5, i32* %result
-     ret %Exception* null
+      ret %Exception* null
    }
 
 
