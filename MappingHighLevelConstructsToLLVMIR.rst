@@ -189,7 +189,7 @@ constant value wherever it is being used in a computation:
 
 .. code-block:: llvm
 
-   %1 = add i32 %0, 17
+   %1 = add i32 %0, 17     ; 17 is an inlined constant
 
 Constants that do occupy memory are defined using the ``constant`` keyword:
 
