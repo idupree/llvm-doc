@@ -18,13 +18,17 @@ review:
 #. How to interface with a garbage collector? (link to existing docs)
 #. How to express a custom calling convention? (link to existing docs)
 #. Representing constructors, destructors, finalization
-#. How to examine the stack at runtime?  How to modify it?  (i.e. reflection, interjection)
-#. Representing subtyping checks (with full alias info), TBAA, struct-path TBAA
+#. How to examine the stack at runtime?  How to modify it?  (i.e. reflection,
+   interjection)
+#. Representing subtyping checks (with full alias info), TBAA, struct-path
+   TBAA.
 #. How to exploit inlining (external, vs within LLVM)?
 #. How to express array bounds checks for best optimization?
 #. How to express null pointer checks?
-#. How to express domain specific optimizations?  (i.e. lock elision, or matrix math simplification) (link to existing docs)
-#. How to optimize call dispatch or field access in dynamic languages? (ref new patchpoint intrinsics for inline call caching and field access caching)
+#. How to express domain specific optimizations?  (i.e. lock elision, or
+   matrix math simplification) (link to existing docs)
+#. How to optimize call dispatch or field access in dynamic languages? (ref
+   new patchpoint intrinsics for inline call caching and field access caching)
 
 **TODO:** Ask various front-end implementors (Rust, Haskell (GHC), Rubinius,
 and more) to review and/or contribute so as to make the document great.
@@ -65,8 +69,9 @@ Here are a few things that you should know before reading this document:
    well optimized and you'll often see two or three LLVM IR instructions be
    coalesced into a single machine code instruction.
 #. If in doubt, consult the :doc:`LangRef`.  If there is a conflict between
-   the Language Reference and this document, the latter is wrong!
-#. All LLVM IR examples have been compiled successfully but not run.
+   the Language Reference and this document, this document is wrong!
+#. All LLVM IR examples have been compiled successfully but not run (this is
+   going to change so that all samples have been built and run succesfully).
 #. All LLVM IR examples assume a POSIX environment with ``malloc``, etc.
 #. All LLVM IR examples are presented without a data layout and without a
    target triple.  You need to add those yourself, if you want to actually
@@ -1257,7 +1262,7 @@ Resources
 #. `Compiler Internals - Exception Handling
    <http://www.hexblog.com/wp-content/uploads/2012/06/Recon-2012-Skochinsky-Compiler-Internals.pdf>`_.
 #. `Exception Handling in C without C++ <http://www.on-time.com/ddj0011.htm>`_.
-#. `How a C++ Compiler Exception Handling
+#. `How a C++ Compiler Implements Exception Handling
    <http://www.codeproject.com/Articles/2126/How-a-C-compiler-implements-exception-handling>`_.
 #. `DWARF standard - Exception Handling
    <http://wiki.dwarfstd.org/index.php?title=Exception_Handling>`_.
