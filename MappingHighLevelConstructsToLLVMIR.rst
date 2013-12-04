@@ -81,6 +81,13 @@ In short, the tools work as follows:
 #. ``opt`` reads ``.bc`` or ``.ll`` and writes the same as the input.
 #. ``llc`` reads ``.ll`` and writes ``.s``.
 
+While you are playing around with generating or writing LLVM IR, you may want
+to add the option `` -fsanitize=undefined`` to Clang/Clang++ insofar you use
+either of those.  This option makes Clang/Clang++ insert run-time checks in
+places where it would normally output an ``ud2`` instruction.  This will
+likely save you some trouble if you happen to generate undefined LLVM IR.
+Please notice that this option only works for C and C++ compiles.
+
 
 Mapping Basic Constructs into LLVM IR
 =====================================
