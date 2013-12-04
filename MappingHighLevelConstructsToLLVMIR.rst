@@ -311,7 +311,7 @@ function calls that allows you to explictly list the types of the parameters
 of the function that is being called.  This "hack" exists to allow overriding
 a call to a function such as a function with variable parameters.  Please
 notice that you only need to specify the return type once, not twice as you'd
-have to do if it was a plain cast:
+have to do if it was a true cast:
 
 .. code-block:: llvm
 
