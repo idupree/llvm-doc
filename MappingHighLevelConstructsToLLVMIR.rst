@@ -853,16 +853,7 @@ execution paths where no exceptions are being thrown. This method is the
 de-facto "right" way of implementing exceptions, whether you like it or not.
 LLVM directly supports this kind of exception handling.
 
-
-Exception Handling by Propagated Return Value
----------------------------------------------
-This method basically is a compiler-generated way of implicitly checking each
-function's return value.  Its main advantage is that it is simple - at the
-cost of many mostly unproductive checks of return values.  The great thing
-about this method is that it readily interfaces with a host of languages and
-environments - it is all a matter of returning a pointer to an exception:
-
-**STATUS:** Compiled and run succesfully on 2013.12.04 by Mikael Lyngvig.
+In the three sections below, we'll be using this sample and transform it:
 
 .. code-block:: cpp
 
@@ -925,6 +916,16 @@ environments - it is all a matter of returning a pointer to an exception:
       return result;
    }
 
+
+Exception Handling by Propagated Return Value
+---------------------------------------------
+This method basically is a compiler-generated way of implicitly checking each
+function's return value.  Its main advantage is that it is simple - at the
+cost of many mostly unproductive checks of return values.  The great thing
+about this method is that it readily interfaces with a host of languages and
+environments - it is all a matter of returning a pointer to an exception.
+
+**STATUS:** Compiled and run succesfully on 2013.12.04 by Mikael Lyngvig.
 
 This maps to the following code:
 
