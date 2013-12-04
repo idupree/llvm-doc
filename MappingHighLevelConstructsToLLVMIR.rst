@@ -245,9 +245,12 @@ referenced from outside of the defining module:
 Functions with a Variable Number of Parameters
 """"""""""""""""""""""""""""""""""""""""""""""
 To call a so-called vararg function, you first need to define or declare it
-using the elipsis (...) and then you need to do an explicit cast to the
-function profile in question when you call it as LLVM is very strict about
-types and whatever arguments you pass are going to mismatch with the elipsis:
+using the elipsis (...) and then you need to make use of a special syntax for
+function calls that allows you to explictly list the types of the parameters
+of the function that is being called.  This "hack" exists to allow overriding
+a call to a function such as a function with variable parameters.  Please
+notice that you only need to specify the return type once, not twice as you'd
+have to do if it was a plain cast:
 
 .. code-block:: llvm
 
