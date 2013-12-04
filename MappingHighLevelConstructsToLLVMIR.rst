@@ -1152,47 +1152,7 @@ instances allocated on the stack and then the cost can become quite high.
 ``setjmp``/``longjmp`` exception handling is often abbreviated ``SjLj``
 for ``SetJmp``/``LongJmp``.
 
-.. code-block:: cpp
-
-   #include <stdio.h>
-
-   class Exception
-   {
-   public:
-      Exception(const char *text)
-      {
-         _text = text;
-      }
-
-      const char *GetText() const
-      {
-         return _text;
-      }
-
-   private:
-      const char *_text;
-   };
-
-   int main(int argc, const char *argv[])
-   {
-      int result = EXIT_FAILURE;
-
-      try
-      {
-         if (argc == 1)
-            throw Exception("Syntax: 'program' source-file target-file");
-
-         result = EXIT_SUCCESS;
-      }
-      catch (Exception that)
-      {
-         puts(that.GetText());
-      }
-
-      return result;
-   }
-
-This translates into something like this:
+The sample translates into something like this:
 
 .. code-block:: llvm
 
@@ -1247,8 +1207,7 @@ This translates into something like this:
 
    .catch:
 
-
-**TODO:** Finish up ``setjmp``/``longjmp`` example.
+**TODO:** Finish up ``setjmp``/``longjmp`` example using new sample.
 
 
 Zero Cost Exception Handling
@@ -1278,9 +1237,9 @@ they can be mapped to LLVM IR.
 
 Classes
 -------
-A class is basically nothing more than a structure with an associated set of
-functions that take an implicit first parameter, namely a pointer to the
-structure.  Therefore, is is very trivial to map a class to LLVM IR:
+A class is nothing more than a structure with an associated set of functions
+that take an implicit first parameter, namely a pointer to the structure.
+Therefore, is is very trivial to map a class to LLVM IR:
 
 .. code-block:: cpp
 
