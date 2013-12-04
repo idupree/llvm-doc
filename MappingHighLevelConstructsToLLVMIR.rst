@@ -174,6 +174,8 @@ generally the case in LLVM, you must explicitly use a ``load`` or ``store``
 instruction to read or write the value respectively.
 
 
+
+
 Constants
 ---------
 There are two different kinds of constants:
@@ -197,9 +199,9 @@ Constants that do occupy memory are defined using the ``constant`` keyword:
    %struct = type { i32, i8 }
    @struct_constant = internal constant %struct { i32 16, i8 4 }
 
-Such constants are globals variables, unless specifically marked with
-``private``, ``internal``, or another modifier that limits its visibility to
-the current module.
+Such a constant is really a global variable whose visibility can be limited
+with ``private`` or ``internal`` so that it is invisible outside the current
+module.
 
 
 Constant Expressions
