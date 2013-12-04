@@ -862,6 +862,8 @@ cost of many mostly unproductive checks of return values.  The great thing
 about this method is that it readily interfaces with a host of languages and
 environments - it is all a matter of returning a pointer to an exception:
 
+**STATUS:** Compiled and run succesfully on 2013.12.04 by Mikael Lyngvig.
+
 .. code-block:: cpp
 
    #include <stdio.h>
@@ -926,8 +928,6 @@ environments - it is all a matter of returning a pointer to an exception:
 
 This maps to the following code:
 
-**TODO:** Make the code below run; it compiles but does not run yet.
-
 .. code-block:: llvm
 
    ;********************* External and Utility functions *********************
@@ -937,7 +937,7 @@ This maps to the following code:
    declare i32 @printf(i8* noalias nocapture, ...) nounwind
    declare i32 @puts(i8* noalias nocapture) nounwind
 
-   define fastcc i8* @xfree(i8* %value) nounwind {
+   define i8* @xfree(i8* %value) nounwind {
       call void @free(i8* %value)
       ret i8* null
    }
@@ -964,7 +964,7 @@ This maps to the following code:
 
    ; returns true if the specified object is identical to or derived from the
    ; class with the specified name.
-   define fastcc i1 @Object_IsA(%Object* %object, i8* %name) nounwind {
+   define i1 @Object_IsA(%Object* %object, i8* %name) nounwind {
    .init:
      ; if (object == null) return false
      %0 = icmp ne %Object* %object, null
@@ -1019,7 +1019,7 @@ This maps to the following code:
      i8*                                           ; 1: the _text member
    }
 
-   define fastcc void @Exception_Create_String(%Exception* %this, i8* %text) nounwind {
+   define void @Exception_Create_String(%Exception* %this, i8* %text) nounwind {
      ; set up vtable
      %1 = getelementptr %Exception* %this, i32 0, i32 0
      store %Exception_vtable_type* @.Exception_vtable, %Exception_vtable_type** %1
@@ -1031,7 +1031,7 @@ This maps to the following code:
      ret void
    }
 
-   define fastcc i8* @Exception_GetText(%Exception* %this) nounwind {
+   define i8* @Exception_GetText(%Exception* %this) nounwind {
      %1 = getelementptr %Exception* %this, i32 0, i32 1
      %2 = load i8** %1
      ret i8* %2
@@ -1042,19 +1042,19 @@ This maps to the following code:
 
    %Foo = type { i32 }
 
-   define fastcc void @Foo_Create_Default(%Foo* %this) nounwind {
+   define void @Foo_Create_Default(%Foo* %this) nounwind {
      %1 = getelementptr %Foo* %this, i32 0, i32 0
      store i32 0, i32* %1
      ret void
    }
 
-   define fastcc i32 @Foo_GetLength(%Foo* %this) nounwind {
+   define i32 @Foo_GetLength(%Foo* %this) nounwind {
       %1 = getelementptr %Foo* %this, i32 0, i32 0
       %2 = load i32* %1
       ret i32 %2
    }
 
-   define fastcc void @Foo_SetLength(%Foo* %this, i32 %value) nounwind {
+   define void @Foo_SetLength(%Foo* %this, i32 %value) nounwind {
      %1 = getelementptr %Foo* %this, i32 0, i32 0
      store i32 %value, i32* %1
      ret void
@@ -1063,14 +1063,9 @@ This maps to the following code:
 
    ;********************************* Foo function ***************************
 
-   %Bar_Result = type {
-      %Exception*,               ; pointer to exception or null if none
-      i32                        ; actual return value of the function
-   }
-
    @.message1 = internal constant [30 x i8] c"Exception requested by caller\00"
 
-   define fastcc %Bar_Result @Bar(i1 %fail) nounwind {
+   define %Exception* @Bar(i1 %fail, i32* %result) nounwind {
       ; Allocate Foo instance
       %foo = alloca %Foo
       call void @Foo_Create_Default(%Foo* %foo)
@@ -1087,21 +1082,14 @@ This maps to the following code:
       %3 = bitcast i8* %2 to %Exception*
       %4 = getelementptr [30 x i8]* @.message1, i32 0, i32 0
       call void @Exception_Create_String(%Exception* %3, i8* %4)
-      br label %.exit
+      ret %Exception* %3
 
    .if_close:
       ; foo.SetLength(24)
       call void @Foo_SetLength(%Foo* %foo, i32 24)
       %5 = call i32 @Foo_GetLength(%Foo* %foo)
-      br label %.exit
-
-    .exit:
-      ; return initialized %Bar_Result structure
-      %6 = phi %Exception* [ %3, %.if_begin ], [ null, %.if_close ]
-      %7 = phi i32 [ 0, %.if_begin ], [ %5, %.if_close ]
-      %8 = insertvalue %Bar_Result undef, %Exception* %6, 0
-      %9 = insertvalue %Bar_Result %8, i32 %7, 1
-      ret %Bar_Result %9
+      store i32 %5, i32* %result
+     ret %Exception* null
    }
 
 
@@ -1115,41 +1103,37 @@ This maps to the following code:
 
       ; Body of try block.
       ; First call.
-      %1 = call %Bar_Result @Bar(i1 false)
-      %2 = extractvalue %Bar_Result %1, 0
+      %1 = alloca i32
+      %2 = call %Exception* @Bar(i1 false, i32* %1)
       %3 = icmp eq %Exception* %2, null
       br i1 %3, label %.second, label %.catch_block
 
       ; Second call.
    .second:
-      %4 = call %Bar_Result @Bar(i1 true)
-      %5 = extractvalue %Bar_Result %4, 0
-      %6 = icmp eq %Exception* %5, null
-      br i1 %6, label %.success, label %.catch_block
-
-   .success:
-      br label %.exit
+      %4 = call %Exception* @Bar(i1 true, i32* %1)
+      %5 = icmp eq %Exception* %4, null
+      br i1 %5, label %.exit, label %.catch_block
 
    .catch_block:
-      %7 = phi %Exception* [ %2, %0 ], [ %5, %.second ]
-      %8 = getelementptr inbounds [10 x i8]* @.Exception_class_name, i32 0, i32 0
-      %9 = bitcast %Exception* %7 to %Object*
-      %10 = call i1 @Object_IsA(%Object* %9, i8* %8)
-      br i1 %10, label %.catch_exception, label %.catch_all
+      %6 = phi %Exception* [ %2, %0 ], [ %4, %.second ]
+      %7 = getelementptr [10 x i8]* @.Exception_class_name, i32 0, i32 0
+      %8 = bitcast %Exception* %6 to %Object*
+      %9 = call i1 @Object_IsA(%Object* %8, i8* %7)
+      br i1 %9, label %.catch_exception, label %.catch_all
 
    .catch_exception:
-      %11 = getelementptr inbounds [11 x i8]* @.message2, i32 0, i32 0
-      %12 = call i8* @Exception_GetText(%Exception* %7)
-      %13 = call i32 (i8*, ...)* @printf(i8* %11, i8* %12)
+      %10 = getelementptr [11 x i8]* @.message2, i32 0, i32 0
+      %11 = call i8* @Exception_GetText(%Exception* %6)
+      %12 = call i32 (i8*, ...)* @printf(i8* %10, i8* %11)
       br label %.exit
 
    .catch_all:
-      %14 = getelementptr inbounds [44 x i8]* @.message3, i32 0, i32 0
-      %15 = call i32 @puts(i8* %14)
+      %13 = getelementptr [44 x i8]* @.message3, i32 0, i32 0
+      %14 = call i32 @puts(i8* %13)
       br label %.exit
 
    .exit:
-      %result = phi i32 [ 0, %.success ], [ 1, %.catch_exception ], [ 1, %.catch_all ]
+      %result = phi i32 [ 0, %.second ], [ 1, %.catch_exception ], [ 1, %.catch_all ]
       ret i32 %result
    }
 
