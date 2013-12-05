@@ -616,9 +616,6 @@ for the lambda function.  There are a few different ways of implementing
 lambda functions (see `Wikipedia on nested functions
 <http://en.wikipedia.org/wiki/Nested_function>`_ for more information).
 
-I'll give an example in pseudo-C++ because C++ does not currently support lambda
-functions:
-
 .. code-block:: cpp
 
    int foo(int a)
