@@ -623,7 +623,7 @@ functions:
 
    int foo(int a)
    {
-      auto function = lambda(int x) { return x + a; }
+      auto function = [](int x) { return x + a; }
       return function(10);
    }
 
@@ -653,7 +653,7 @@ function:
    int foo(int a, int b)
    {
       int c = integer_parse();
-      auto function = lambda(int x) { return (a + b - c) * x; }
+      auto function = [](int x) { return (a + b - c) * x; }
       return function(10);
    }
 
