@@ -626,8 +626,8 @@ lambda functions (see `Wikipedia on nested functions
 
 Here the "problem" is that the lambda function references a local variable of
 the caller, namely ``a``, even though the lambda function is a function of its
-own.  This can be solved easily by passing the local variables in as implicit
-arguments to the lambda function:
+own.  This can be solved easily by passing the local variable in as an implicit
+argument to the lambda function:
 
 .. code-block:: llvm
 
