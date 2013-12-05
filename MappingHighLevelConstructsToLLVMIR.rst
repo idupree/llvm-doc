@@ -61,7 +61,7 @@ Here are a few things that you should know before reading this document:
 #. LLVM IR does not differentiate between signed and unsigned integers.
 #. LLVM IR assumes two's complement signed integers so that say ``trunc``
    works equally well on signed and unsigned integers.
-#. Global symbols begin with an ampersand (@).
+#. Global symbols begin with an at sign (@).
 #. Local symbols begin with a percent symbol (%).
 #. All symbols must be declared or defined.
 #. Don't worry that the LLVM IR at times can seem somewhat lengthy when it
